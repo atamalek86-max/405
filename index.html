@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ارزیابی جهش یادگیری</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#20211D;
+    --sand:#F7F3EC;
+    --sand-2:#EFE8DA;
+    --teal:#1F4B4A;
+    --teal-deep:#153433;
+    --amber:#D8A34C;
+    --rose:#B85C5C;
+    --line:#DED4C0;
+    --white:#FFFDF9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Vazirmatn', sans-serif;
+    background:var(--sand);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:0 20px;
+  }
+
+  /* Header / progress */
+  .topbar{
+    padding:28px 0 18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    color:var(--teal);
+    font-weight:600;
+  }
+  .brand-mark{
+    width:32px; height:auto;
+    flex-shrink:0;
+    border-radius:6px;
+  }
+  .steps{
+    display:flex;
+    gap:6px;
+  }
+  .step-dot{
+    flex:1;
+    height:5px;
+    border-radius:3px;
+    background:var(--sand-2);
+    overflow:hidden;
+    position:relative;
+  }
+  .step-dot::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:var(--amber);
+    transform:scaleX(0);
+    transform-origin:right;
+    transition:transform .5s cubic-bezier(.65,0,.35,1);
+  }
+  .step-dot.filled::after{transform:scaleX(1);}
+  .step-dot.current::after{transform:scaleX(1); background:var(--teal);}
+
+  /* Screens */
+  .screen{
+    flex:1;
+    display:none;
+    flex-direction:column;
+    animation:rise .45s cubic-bezier(.16,1,.3,1);
+  }
+  .screen.active{display:flex;}
+  @keyframes rise{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* Intro */
+  .intro{justify-content:center; text-align:center; gap:22px; padding:20px 0 60px;}
+  .intro-mark{width:120px; height:auto; margin:0 auto; border-radius:14px;}
+  .intro h1{
+    font-size:26px;
+    font-weight:800;
+    line-height:1.5;
+    color:var(--teal-deep);
+  }
+  .intro p{
+    font-size:15.5px;
+    line-height:1.9;
+    color:#4A4A44;
+  }
+  .intro .meta{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    font-size:13px;
+    color:var(--teal);
+    font-weight:600;
+  }
+  .meta-item{display:flex; align-items:center; gap:6px;}
+
+  /* Question */
+  .q-eyebrow{
+    font-size:13px;
+    font-weight:600;
+    color:var(--amber);
+    margin-bottom:10px;
+  }
+  .q-title{
+    font-size:21px;
+    font-weight:700;
+    line-height:1.6;
+    color:var(--teal-deep);
+    margin-bottom:26px;
+  }
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .option{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:16px;
+    padding:16px 18px;
+    font-size:15.5px;
+    line-height:1.7;
+    color:var(--ink);
+    text-align:right;
+    cursor:pointer;
+    transition:border-color .2s, background .2s, transform .15s;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .option:active{transform:scale(.98);}
+  .option.selected{
+    border-color:var(--teal);
+    background:#EAF1F0;
+  }
+  .option .check{
+    width:20px; height:20px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .option.selected .check{
+    background:var(--teal);
+    border-color:var(--teal);
+  }
+  .option.selected .check::after{
+    content:'';
+    width:5px; height:9px;
+    border-bottom:2px solid white;
+    border-right:2px solid white;
+    transform:rotate(45deg) translate(-1px,-1px);
+  }
+  .option.multi.selected .check{border-radius:6px;}
+
+  .hint{
+    font-size:13px;
+    color:#8A8578;
+    margin-top:14px;
+  }
+
+  /* Nav */
+  .nav{
+    display:flex;
+    gap:12px;
+    padding:22px 0 30px;
+    margin-top:auto;
+  }
+  .btn{
+    flex:1;
+    padding:16px 20px;
+    border-radius:14px;
+    border:none;
+    font-family:inherit;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:opacity .2s, transform .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--teal); color:var(--white);}
+  .btn-primary:disabled{opacity:.35; cursor:not-allowed;}
+  .btn-ghost{
+    flex:0 0 auto;
+    background:transparent;
+    color:var(--teal);
+    padding:16px 18px;
+  }
+  .btn-start{
+    width:4cm;
+    height:2cm;
+    min-width:4cm;
+    max-width:4cm;
+    min-height:2cm;
+    max-height:2cm;
+    flex:none;
+    align-self:center;
+    padding:0;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1.3;
+    white-space:nowrap;
+  }
+
+  /* Result screen */
+  .result{gap:20px; padding-top:10px;}
+  .result-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    align-self:flex-start;
+    background:#EAF1F0;
+    color:var(--teal-deep);
+    font-size:13px;
+    font-weight:700;
+    padding:8px 14px;
+    border-radius:999px;
+  }
+  .result-badge.severe{background:#F5E7E7; color:var(--rose);}
+  .result-badge.moderate{background:#FBF1E1; color:#9C7327;}
+  .result-title{
+    font-size:24px;
+    font-weight:800;
+    line-height:1.6;
+    color:var(--teal-deep);
+  }
+  .result-body{
+    font-size:15.5px;
+    line-height:2;
+    color:#4A4A44;
+  }
+  .result-card{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .result-card-label{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--amber);
+  }
+  .result-card-text{
+    font-size:14.5px;
+    line-height:1.9;
+    color:#4A4A44;
+  }
+  .code-card{
+    background:var(--teal);
+    border-radius:18px;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    text-align:center;
+  }
+  .code-card-label{
+    font-size:12.5px;
+    font-weight:600;
+    color:#B9D3D1;
+  }
+  .code-card-value{
+    font-size:26px;
+    font-weight:800;
+    color:var(--white);
+    letter-spacing:1px;
+    direction:ltr;
+  }
+  .code-card-hint{
+    font-size:12.5px;
+    line-height:1.8;
+    color:#CFE1DF;
+  }
+  .cta-block{
+    margin-top:auto;
+    padding-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .cta-note{
+    font-size:13px;
+    color:#8A8578;
+    text-align:center;
+  }
+  a.btn-primary{
+    display:flex; align-items:center; justify-content:center;
+    text-decoration:none;
+  }
+
+  .restart{
+    text-align:center;
+    font-size:13.5px;
+    color:#8A8578;
+    padding-bottom:24px;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+
+  @media (max-width:380px){
+    .intro h1{font-size:22px;}
+    .q-title{font-size:19px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar" id="topbar" style="display:none;">
+    <div class="brand">
+      <img class="brand-mark" src="logo.png" alt="آکادمی هوش و یادگیری آکسون">
+      <span>ارزیابی جهش یادگیری</span>
+    </div>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="screen intro active" id="screen-intro">
+    <img class="intro-mark" src="logo.png" alt="آکادمی هوش و یادگیری آکسون">
+    <h1>بفهمید فرزندتان دقیقاً<br>در کجای مسیر یادگیری گیر کرده</h1>
+    <p>با پاسخ به ۹ سؤال کوتاه، الگوی اصلی مشکل یادگیری یا رفتاری فرزندتان مشخص می‌شود. این ارزیابی نیازی به ثبت‌نام یا اطلاعات حساس ندارد.</p>
+    <div class="meta">
+      <div class="meta-item">۳ دقیقه</div>
+      <div class="meta-item">۹ سؤال</div>
+      <div class="meta-item">رایگان</div>
+    </div>
+    <button class="btn btn-primary btn-start" onclick="goTo(1)">شروع ارزیابی</button>
+  </div>
+
+  <!-- QUESTIONS injected here -->
+  <div id="questions-container"></div>
+
+  <!-- RESULT -->
+  <div class="screen result" id="screen-result">
+    <div class="result-badge" id="result-badge">سطح ارزیابی</div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-body" id="result-body"></div>
+    <div class="result-card">
+      <div class="result-card-label">این یعنی چه؟</div>
+      <div class="result-card-text" id="result-detail"></div>
+    </div>
+    <div class="code-card">
+      <div class="code-card-label">کد نتیجه شما</div>
+      <div class="code-card-value" id="result-code"></div>
+      <div class="code-card-hint">این کد را هنگام ارتباط با متخصص اعلام کنید تا از وضعیت فرزندتان آگاه شویم</div>
+    </div>
+    <div class="cta-block">
+      <a class="btn btn-primary" href="https://takl.ink/Ertebatbma/" target="_blank" id="cta-button">ارتباط با متخصص</a>
+      <div class="cta-note">نتیجه شما محرمانه است و فقط برای گفتگوی بعدی استفاده می‌شود</div>
+    </div>
+    <div class="restart" onclick="restart()">شروع دوباره ارزیابی</div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const questions = [
+  {
+    id:1, multi:false, eyebrow:'۱ از ۹',
+    title:'سن و پایه تحصیلی فرزندتان چقدر است؟',
+    options:[
+      {text:'پیش‌دبستانی یا اول ابتدایی', score:{sev:1}},
+      {text:'دوم تا چهارم ابتدایی', score:{sev:1}},
+      {text:'پنجم تا ششم ابتدایی', score:{sev:1}},
+      {text:'دوره متوسطه', score:{sev:1}},
+    ]
+  },
+  {
+    id:2, multi:false, eyebrow:'۲ از ۹',
+    title:'این مشکل از چه زمانی شروع شده؟',
+    options:[
+      {text:'چند هفته اخیر', score:{sev:1}},
+      {text:'چند ماه اخیر', score:{sev:2}},
+      {text:'بیش از یک سال است', score:{sev:3}},
+      {text:'از همان ابتدای مدرسه بوده', score:{sev:4}},
+    ]
+  },
+  {
+    id:3, multi:true, eyebrow:'۳ از ۹',
+    title:'کدام مورد را بیشتر در فرزندتان می‌بینید؟',
+    hint:'می‌توانید بیش از یک گزینه انتخاب کنید',
+    options:[
+      {text:'نمی‌تواند تمرکز کند؛ زود حواسش پرت می‌شود', score:{type:'C'}},
+      {text:'زود یاد می‌گیرد، ولی زود هم فراموش می‌کند', score:{type:'C'}},
+      {text:'در خواندن یا نوشتن مشکل دارد', score:{type:'C'}},
+      {text:'در ریاضی یا اعداد مشکل دارد', score:{type:'C'}},
+      {text:'اصلاً انگیزه‌ای برای درس خواندن ندارد', score:{type:'E'}},
+    ]
+  },
+  {
+    id:4, multi:false, eyebrow:'۴ از ۹',
+    title:'موقع درس خواندن یا امتحان، فرزندتان چقدر مضطرب یا ناراحت می‌شود؟',
+    options:[
+      {text:'اصلاً', score:{sev:1}},
+      {text:'کمی', score:{sev:2}},
+      {text:'زیاد', score:{sev:3}},
+      {text:'خیلی زیاد', score:{sev:4}},
+    ]
+  },
+  {
+    id:5, multi:false, eyebrow:'۵ از ۹',
+    title:'وقتی کار سختی جلوی او می‌گذارید، معمولاً چه‌کار می‌کند؟',
+    options:[
+      {text:'تلاش می‌کند تا حلش کند', score:{sev:1}},
+      {text:'کمک می‌خواهد ولی باز هم تلاش می‌کند', score:{sev:2}},
+      {text:'زود کلافه یا عصبی می‌شود', score:{sev:3}},
+      {text:'کامل جا می‌زند و رها می‌کند', score:{sev:4}},
+    ]
+  },
+  {
+    id:6, multi:false, eyebrow:'۶ از ۹',
+    title:'رابطه فرزندتان با هم‌سن‌وسال‌ها و دوستانش چطور است؟',
+    options:[
+      {text:'خوب و راحت', score:{type:'C'}},
+      {text:'کمی گوشه‌گیر', score:{type:'E'}},
+      {text:'اغلب تنهاست', score:{type:'E'}},
+      {text:'درگیری یا دعوای زیاد دارد', score:{type:'E'}},
+    ]
+  },
+  {
+    id:7, multi:false, eyebrow:'۷ از ۹',
+    title:'فضای خانه هنگام درس خواندن معمولاً چطور است؟',
+    options:[
+      {text:'آرام و بدون تنش', score:{sev:1}},
+      {text:'گاهی بحث می‌شود', score:{sev:2}},
+      {text:'اغلب دعوا و تنش دارد', score:{sev:4}},
+    ]
+  },
+  {
+    id:8, multi:false, eyebrow:'۸ از ۹',
+    title:'تا حالا برای این موضوع اقدامی کرده‌اید؟ (مشاور، آموزشگاه، پزشک...)',
+    options:[
+      {text:'نه، این اولین بار است', score:{}},
+      {text:'بله، ولی نتیجه نگرفتیم', score:{}},
+      {text:'بله و کمی کمک کرد', score:{}},
+    ]
+  },
+  {
+    id:9, multi:false, eyebrow:'۹ از ۹',
+    title:'از این ارزیابی دقیقاً چه انتظاری دارید؟',
+    options:[
+      {text:'فقط بفهمم مشکل او چیست', score:{}},
+      {text:'راهکار عملی برای خانه', score:{}},
+      {text:'همراهی مستمر و تخصصی', score:{}},
+    ]
+  },
+];
+
+const totalScreens = questions.length + 2; // intro + questions + result
+let current = 0; // 0 = intro
+let answers = {}; // qid -> array of selected indices
+
+/* ---------------- BUILD DOM ---------------- */
+const qContainer = document.getElementById('questions-container');
+questions.forEach((q, qi) => {
+  const div = document.createElement('div');
+  div.className = 'screen';
+  div.id = 'screen-q' + q.id;
+  div.innerHTML = `
+    <div class="q-eyebrow">${q.eyebrow}</div>
+    <div class="q-title">${q.title}</div>
+    <div class="options" id="options-${q.id}">
+      ${q.options.map((o,oi)=>`
+        <div class="option ${q.multi?'multi':''}" data-q="${q.id}" data-o="${oi}" onclick="selectOption(${q.id},${oi},${q.multi})">
+          <span>${o.text}</span>
+          <span class="check"></span>
+        </div>
+      `).join('')}
+    </div>
+    ${q.hint ? `<div class="hint">${q.hint}</div>` : ''}
+    <div class="nav">
+      <button class="btn btn-ghost" onclick="goTo(${qi})">بازگشت</button>
+      <button class="btn btn-primary" id="next-${q.id}" disabled onclick="nextFrom(${q.id})">
+        ${qi === questions.length-1 ? 'مشاهده نتیجه' : 'ادامه'}
+      </button>
+    </div>
+  `;
+  qContainer.appendChild(div);
+});
+
+// progress dots
+const stepsEl = document.getElementById('steps');
+questions.forEach((q,i)=>{
+  const d = document.createElement('div');
+  d.className = 'step-dot';
+  d.id = 'dot-'+i;
+  stepsEl.appendChild(d);
+});
+
+/* ---------------- LOGIC ---------------- */
+function selectOption(qid, oi, multi){
+  if(!answers[qid]) answers[qid] = [];
+  if(multi){
+    const idx = answers[qid].indexOf(oi);
+    if(idx > -1) answers[qid].splice(idx,1);
+    else answers[qid].push(oi);
+  } else {
+    answers[qid] = [oi];
+  }
+  // update UI
+  document.querySelectorAll(`.option[data-q="${qid}"]`).forEach(el=>{
+    const o = parseInt(el.dataset.o);
+    el.classList.toggle('selected', answers[qid].includes(o));
+  });
+  document.getElementById('next-'+qid).disabled = answers[qid].length === 0;
+}
+
+function goTo(index){
+  // index: 0 = intro, 1..9 = questions, 10 = result
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('topbar').style.display = index === 0 || index === questions.length+1 ? 'none' : 'flex';
+
+  if(index === 0){
+    document.getElementById('screen-intro').classList.add('active');
+  } else if(index === questions.length+1){
+    document.getElementById('screen-result').classList.add('active');
+    showResult();
+  } else {
+    const q = questions[index-1];
+    document.getElementById('screen-q'+q.id).classList.add('active');
+  }
+  updateDots(index);
+  current = index;
+  window.scrollTo(0,0);
+}
+
+function updateDots(index){
+  questions.forEach((q,i)=>{
+    const dot = document.getElementById('dot-'+i);
+    if(!dot) return;
+    dot.classList.remove('filled','current');
+    if(i < index-1) dot.classList.add('filled');
+    else if(i === index-1) dot.classList.add('current');
+  });
+}
+
+function nextFrom(qid){
+  const qi = questions.findIndex(q=>q.id===qid);
+  goTo(qi+2);
+}
+
+function restart(){
+  answers = {};
+  document.querySelectorAll('.option.selected').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('.btn-primary[id^="next-"]').forEach(b=>b.disabled=true);
+  goTo(0);
+}
+
+/* ---------------- SCORING ---------------- */
+function computeResult(){
+  let sev = 0, cCount = 0, eCount = 0;
+  questions.forEach(q=>{
+    const sel = answers[q.id] || [];
+    sel.forEach(oi=>{
+      const s = q.options[oi].score || {};
+      if(s.sev) sev += s.sev;
+      if(s.type === 'C') cCount++;
+      if(s.type === 'E') eCount++;
+    });
+  });
+
+  let severity;
+  if(sev <= 8) severity = 'mild';
+  else if(sev <= 12) severity = 'moderate';
+  else severity = 'severe';
+
+  let type;
+  if(cCount > eCount) type = 'C';
+  else if(eCount > cCount) type = 'E';
+  else type = 'M';
+
+  return {severity, type};
+}
+
+const RESULTS = {
+  mild_C: {
+    badge:'سطح خفیف', badgeClass:'',
+    title:'نشانه‌های خفیف در تمرکز یا یادگیری',
+    body:'بر اساس پاسخ‌هاتون، فرزندتان در حال حاضر نشانه‌های خفیفی در زمینه تمرکز، حافظه یا خواندن/نوشتن نشان می‌دهد. خبر خوب این است که در این مرحله، با مداخله زودهنگام معمولاً نتیجه‌گیری سریع‌تر و ساده‌تری ممکن است.',
+    detail:'حتی مشکلات خفیف اگر بدون پیگیری بمانند، می‌توانند با گذشت زمان جدی‌تر شوند.'
+  },
+  mild_E: {
+    badge:'سطح خفیف', badgeClass:'',
+    title:'نشانه‌های خفیف اضطراب یا چالش رفتاری/اجتماعی',
+    body:'پاسخ‌هاتون نشان می‌دهد فرزندتان در حال حاضر سطح خفیفی از اضطراب، بی‌حوصلگی یا کمی گوشه‌گیری اجتماعی را تجربه می‌کند. این نوع نشانه‌ها معمولاً ریشه در فشارهای بیرونی دارند و در این مرحله قابل مدیریت هستند.',
+    detail:'توجه به این نشانه‌ها همین حالا، از تثبیت‌شدن آن‌ها جلوگیری می‌کند.'
+  },
+  mild_M: {
+    badge:'سطح خفیف', badgeClass:'',
+    title:'ترکیب خفیفی از نشانه‌های شناختی و هیجانی',
+    body:'بر اساس پاسخ‌هاتون، فرزندتان هم کمی در زمینه یادگیری و هم کمی از نظر هیجانی یا اجتماعی نشانه نشان می‌دهد. این ترکیب رایج است، چون این دو حوزه معمولاً به هم وابسته‌اند.',
+    detail:'تشخیص دقیق اینکه کدام بخش «علت» و کدام «معلول» است، در این مرحله اهمیت زیادی دارد.'
+  },
+  moderate_C: {
+    badge:'سطح متوسط', badgeClass:'moderate',
+    title:'مشکل قابل‌توجه در تمرکز، حافظه یا یادگیری',
+    body:'پاسخ‌هاتون نشان می‌دهد فرزندتان به‌طور محسوسی با تمرکز، حافظه یا مهارت‌های خواندن/نوشتن/ریاضی درگیر است، و این موضوع مدتی است ادامه دارد. این سطح از مشکل معمولاً به‌تنهایی و با گذشت زمان بهتر نمی‌شود.',
+    detail:'بهتر است هرچه زودتر بررسی دقیق‌تری روی این الگو انجام شود.'
+  },
+  moderate_E: {
+    badge:'سطح متوسط', badgeClass:'moderate',
+    title:'اضطراب یا چالش رفتاری/اجتماعی قابل‌توجه',
+    body:'بر اساس پاسخ‌هاتون، فرزندتان سطح محسوسی از اضطراب، کلافگی هنگام انجام تکالیف، یا مشکل در روابط اجتماعی/خانوادگی نشان می‌دهد. این الگو معمولاً روی انگیزه و اعتماد‌به‌نفس بچه هم اثر می‌گذارد.',
+    detail:'توجه به بعد هیجانی در این مرحله، از پیچیده‌تر شدن ماجرا جلوگیری می‌کند.'
+  },
+  moderate_M: {
+    badge:'سطح متوسط', badgeClass:'moderate',
+    title:'درگیری هم‌زمان شناختی و هیجانی در سطح قابل‌توجه',
+    body:'پاسخ‌هاتون نشان می‌دهد فرزندتان هم در یادگیری و هم از نظر هیجانی یا اجتماعی به‌طور محسوس درگیر است. این دو معمولاً یکدیگر را تشدید می‌کنند.',
+    detail:'شناسایی نقطه شروع این چرخه، کلید حل مسئله است.'
+  },
+  severe_C: {
+    badge:'سطح شدید', badgeClass:'severe',
+    title:'مشکل جدی و پایدار در یادگیری',
+    body:'بر اساس پاسخ‌هاتون، فرزندتان مدت طولانی‌ای است که با تمرکز، حافظه یا مهارت‌های پایه یادگیری به‌طور جدی دست‌وپنجه نرم می‌کند. این سطح از مشکل نیاز به بررسی تخصصی و بدون تعویق دارد.',
+    detail:'هرچه زودتر شروع شود، مسیر بازگشت کوتاه‌تر خواهد بود.'
+  },
+  severe_E: {
+    badge:'سطح شدید', badgeClass:'severe',
+    title:'اضطراب یادگیری همراه با افت انگیزه',
+    body:'پاسخ‌هاتون نشان می‌دهد بخش مهمی از مشکل فرزندتان ریشه در اضطراب، فشار احساسی یا چالش‌های رفتاری/اجتماعی جدی دارد، نه صرفاً توانایی یادگیری. این الگو معمولاً بدون مداخله تشدید می‌شود.',
+    detail:'با توجه به شدت موضوع، بهتر است این مسئله بدون فوت وقت پیگیری شود.'
+  },
+  severe_M: {
+    badge:'سطح شدید', badgeClass:'severe',
+    title:'درگیری جدی و هم‌زمان شناختی و هیجانی',
+    body:'بر اساس پاسخ‌هاتون، فرزندتان هم‌زمان با چالش‌های جدی در یادگیری و همچنین اضطراب یا مسائل رفتاری/اجتماعی درگیر است. این ترکیب پیچیده‌تر است چون دو حوزه به‌شدت روی هم اثر می‌گذارند.',
+    detail:'توصیه می‌شود این مورد در اولویت بررسی قرار بگیرد.'
+  },
+};
+
+const RESULT_CODES = {
+  mild_C: 1,
+  mild_E: 2,
+  mild_M: 3,
+  moderate_C: 4,
+  moderate_E: 5,
+  moderate_M: 6,
+  severe_C: 7,
+  severe_E: 8,
+  severe_M: 9,
+};
+
+function showResult(){
+  const {severity, type} = computeResult();
+  const key = severity + '_' + type;
+  const r = RESULTS[key];
+
+  const badgeEl = document.getElementById('result-badge');
+  badgeEl.textContent = r.badge;
+  badgeEl.className = 'result-badge ' + r.badgeClass;
+
+  document.getElementById('result-title').textContent = r.title;
+  document.getElementById('result-body').textContent = r.body;
+  document.getElementById('result-detail').textContent = r.detail;
+  document.getElementById('result-code').textContent = 'کد ' + RESULT_CODES[key];
+}
+</script>
+</body>
+</html>
